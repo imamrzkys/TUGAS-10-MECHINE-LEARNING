@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Tentang — TA-10 KNN{% endblock %}
+{% block content %}
+  <div class="row">
+    <div class="col-lg-8">
+      <h3>Tentang Proyek</h3>
+      <p>Project ini bertujuan memprediksi status mahasiswa (Dropout / Enrolled / Graduate) menggunakan model K-Nearest Neighbors.</p>
+      <p><strong>Dataset:</strong> "Predict Students Dropout and Academic Success" (Kaggle).</p>
+      <p><strong>Metode:</strong> KNN, K optimal = 21, akurasi ≈ 71.86%.</p>
+      <h5>Alur training singkat</h5>
+      <ol>
+        <li>Preprocessing: encoding, scaling, handling missing values.</li>
+        <li>Feature selection / engineering.</li>
+        <li>Train-test split, hyperparameter search (pilih K terbaik).</li>
+        <li>Final training dan simpan `model.pkl` dan `preprocessor.pkl`.</li>
+      </ol>
+    </div>
+    <div class="col-lg-4">
+      <div class="card p-3">
+        <h6 class="mb-3">Visualisasi</h6>
+        <img src="{{ url_for('static', filename='img/notebook_image_8_0.png') }}" alt="visualisasi" class="img-fluid">
+      </div>
+    </div>
+  </div>
+{% endblock %}

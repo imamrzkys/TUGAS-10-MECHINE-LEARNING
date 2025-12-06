@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Prediksi — TA-10 KNN{% endblock %}
+{% block content %}
+  <div class="container mt-5">
+    <h2 class="mb-4 fw-bold">Prediksi Status Mahasiswa</h2>
+    
+    <!-- Example Data Buttons -->
+    <div class="mb-4 p-4 bg-white rounded-3 shadow-sm" style="background: linear-gradient(135deg, rgba(255, 140, 0, 0.05) 0%, rgba(255, 140, 0, 0.02) 100%); border-left: 4px solid #ff8c00;">
+      <p class="mb-3 fw-bold text-dark">Contoh Data:</p>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(34, 197, 94, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(34, 197, 94, 0.3)'" onclick="fillExample('success')">Berhasil</button>
+        <button type="button" class="btn" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 600; box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(239, 68, 68, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(239, 68, 68, 0.3)'" onclick="fillExample('failure')">Gagal</button>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card shadow">
+          <div class="card-header" style="background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%); color: white; border: none;">
+            <h5 class="mb-0">Form Prediksi</h5>
+          </div>
+          <div class="card-body">
+            <form method="post" novalidate id="predictionForm">
+              {% for feat in features %}
+                <div class="mb-3">
+                  <label class="form-label">{{ feat }}</label>
+                  <input name="{{ feat }}" class="form-control" placeholder="Masukkan {{ feat }}" data-example-success="50" data-example-failure="20" required>
+                  <div class="form-text small text-muted">Pastikan format angka, untuk field 0/1 masukkan 0 atau 1.</div>
+                </div>
+              {% endfor %}
+              <div class="d-flex gap-2">
+                <button class="btn btn-primary btn-lg flex-grow-1" type="submit">Prediksi</button>
+                <a href="{{ url_for('predict') }}" class="btn btn-outline-secondary btn-lg">Reset</a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card shadow">
+          <div class="card-header" style="background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%); color: white; border: none;">
+            <h5 class="mb-0">Hasil Prediksi</h5>
+          </div>
+          <div class="card-body">
+              {% if result %}
+              {% if result == 'Graduate' or result == 'Graduated' or result == 2 %}
+                <div class="result-section-success">
+                  <h6 class="mb-2">Status Prediksi</h6>
+                  <div class="mb-3">
+                    <span class="badge-success">{{ result }}</span>
+                  </div>
+                  <p class="text-muted mb-0">Mahasiswa diprediksi akan lulus dengan baik.</p>
+                </div>
+              {% elif result == 'Dropout' or result == 0 %}
+                <div class="result-section-failure">
+                  <h6 class="mb-2">Status Prediksi</h6>
+                  <div class="mb-3">
+                    <span class="badge-failure">{{ result }}</span>
+                  </div>
+                  <p class="text-muted mb-0">Mahasiswa diprediksi mengalami kesulitan akademik atau akan dropout.</p>
+                </div>
+              {% else %}
+                <div class="result-section-info">
+                  <h6 class="mb-2">Status Prediksi</h6>
+                  <div class="mb-3">
+                    <span class="badge" style="background: linear-gradient(135deg, #ffa500 0%, #ff8c00 100%); color: white; padding: 10px 18px; border-radius: 12px; font-weight: 700; display: inline-block;">{{ result }}</span>
+                  </div>
+                  <p class="text-muted mb-0">Mahasiswa diprediksi masih terdaftar (Enrolled).</p>
+                </div>
+              {% endif %}
+
+              {% if probabilities %}
+                <div class="result-section-info mt-3">
+                  <h6 class="mb-3 text-dark">Tingkat Kepercayaan Per Status</h6>
+                  <div class="list-group">
+                    {% for cls, p in probabilities %}
+                      <div class="list-group-item d-flex justify-content-between align-items-center border-0 py-2">
+                        <strong>{{ cls }}</strong>
+                        <div class="d-flex align-items-center gap-2">
+                          <div style="width: 120px; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                            {% if cls == 'Graduate' or cls == 'Graduated' %}
+                              <div style="width: {{ p*100 }}%; height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); animation: slideInSuccess 0.5s ease-out;"></div>
+                            {% elif cls == 'Dropout' %}
+                              <div style="width: {{ p*100 }}%; height: 100%; background: linear-gradient(90deg, #ef4444, #f87171); animation: slideInFailure 0.5s ease-out;"></div>
+                            {% else %}
+                              <div style="width: {{ p*100 }}%; height: 100%; background: linear-gradient(90deg, #ff8c00, #ffa500);"></div>
+                            {% endif %}
+                          </div>
+                          <span class="badge" style="{% if cls == 'Graduate' or cls == 'Graduated' %}background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);{% elif cls == 'Dropout' %}background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);{% else %}background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%);{% endif %} color: white; min-width: 50px;">{{ '%.1f' % (p*100) }}%</span>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+
+              <div class="mt-4">
+                <a href="{{ url_for('predict') }}" class="btn w-100" style="background: linear-gradient(135deg, #ff8c00 0%, #ffa500 100%); color: white; border: none;">Prediksi Lagi</a>
+              </div>
+            {% else %}
+              <div class="text-center py-5 text-muted">
+                <p>Silakan isi form di sebelah kiri lalu tekan <strong>Prediksi</strong>.</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function fillExample(type) {
+      const form = document.getElementById('predictionForm');
+      const inputs = form.querySelectorAll('input[name]');
+      
+      inputs.forEach((input) => {
+        const featureName = input.name;
+        let value = '';
+        
+        // Success (Graduate) - nilai tinggi
+        if (type === 'success') {
+          if (featureName.includes('grade') || featureName.includes('Grade')) {
+            value = '85'; // Grade tinggi
+          } else if (featureName.includes('approved')) {
+            value = '6'; // Banyak yang lulus
+          } else if (featureName.includes('enrolled')) {
+            value = '6'; // Banyak yang terdaftar
+          } else if (featureName.includes('evaluations')) {
+            value = '6'; // Banyak evaluasi
+          } else if (featureName.includes('credited')) {
+            value = '6'; // Banyak kredit
+          } else if (featureName.includes('without evaluations')) {
+            value = '0'; // Tidak ada tanpa evaluasi
+          } else if (featureName === 'Tuition fees up to date') {
+            value = '1'; // Bayar tepat waktu
+          } else if (featureName === 'Scholarship holder') {
+            value = '1'; // Punya beasiswa
+          } else if (featureName === 'Admission grade') {
+            value = '160'; // Grade masuk tinggi
+          } else if (featureName === 'Age at enrollment') {
+            value = '18'; // Usia muda
+          } else if (featureName === 'Previous qualification (grade)') {
+            value = '140'; // Grade sebelumnya tinggi
+          } else if (featureName.includes('rate') || featureName === 'GDP') {
+            value = '1.5'; // Rate ekonomi stabil
+          } else if (featureName === 'Displaced' || featureName === 'Educational special needs' || 
+                     featureName === 'Debtor' || featureName === 'International') {
+            value = '0'; // Tidak ada masalah
+          } else if (featureName === 'Application order') {
+            value = '1'; // Prioritas tinggi
+          } else {
+            // Field kategorikal - gunakan nilai default
+            value = '1';
+          }
+        } 
+        // Failure (Dropout) - nilai rendah
+        else if (type === 'failure') {
+          if (featureName.includes('grade') || featureName.includes('Grade')) {
+            value = '8'; // Grade rendah
+          } else if (featureName.includes('approved')) {
+            value = '0'; // Tidak ada yang lulus
+          } else if (featureName.includes('enrolled')) {
+            value = '0'; // Tidak terdaftar
+          } else if (featureName.includes('evaluations')) {
+            value = '0'; // Tidak ada evaluasi
+          } else if (featureName.includes('credited')) {
+            value = '0'; // Tidak ada kredit
+          } else if (featureName.includes('without evaluations')) {
+            value = '6'; // Banyak tanpa evaluasi
+          } else if (featureName === 'Tuition fees up to date') {
+            value = '0'; // Tidak bayar tepat waktu
+          } else if (featureName === 'Scholarship holder') {
+            value = '0'; // Tidak punya beasiswa
+          } else if (featureName === 'Admission grade') {
+            value = '100'; // Grade masuk rendah
+          } else if (featureName === 'Age at enrollment') {
+            value = '30'; // Usia lebih tua
+          } else if (featureName === 'Previous qualification (grade)') {
+            value = '100'; // Grade sebelumnya rendah
+          } else if (featureName.includes('rate') || featureName === 'GDP') {
+            value = '3.0'; // Rate ekonomi tidak stabil
+          } else if (featureName === 'Displaced' || featureName === 'Educational special needs' || 
+                     featureName === 'Debtor' || featureName === 'International') {
+            value = '1'; // Ada masalah
+          } else if (featureName === 'Application order') {
+            value = '9'; // Prioritas rendah
+          } else {
+            // Field kategorikal - gunakan nilai default
+            value = '0';
+          }
+        }
+        
+        input.value = value;
+      });
+      
+      // Show visual feedback
+      form.style.opacity = '0.8';
+      setTimeout(() => {
+        form.style.opacity = '1';
+      }, 300);
+    }
+  </script>
+{% endblock %}
